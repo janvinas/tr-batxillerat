@@ -1,43 +1,38 @@
-#include "AdafruitIO_WiFi.h"
+#include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
+#include <WiFiClientSecureBearSSL.h>
 #include <SoftwareSerial.h>
 
-#define IO_USERNAME   "janvinas"
-#define IO_KEY        "194ab85b6c4147d1a8e19b5633df5796"
-#define WIFI_SSID   "vodafoneC170"
-#define WIFI_PASS   "vinascorella1"
+#define IO_KEY "194ab85b6c4147d1a8e19b5633df5796"
+#define WIFI_SSID "vodafoneC170"
+#define WIFI_PASS "vinascorella1"
 
 SoftwareSerial HC(13,12);
 
-AdafruitIO_WiFi io(IO_USERNAME, IO_KEY, WIFI_SSID, WIFI_PASS);
-
-AdafruitIO_Feed *temperatureIO = io.feed("tr.temperature");
-AdafruitIO_Feed *humidityIO = io.feed("tr.humidity");
-AdafruitIO_Feed *pressureIO = io.feed("tr.pressure");
-AdafruitIO_Feed *lightIO = io.feed("tr.light");
+bool sendData(String feed, String data);
 
 void setup() {
+  
+  WiFi.setSleepMode(WIFI_NONE_SLEEP);
 
-  Serial.begin(9600);
+  Serial.begin(115200);
   HC.begin(2400);
 
   pinMode(0, OUTPUT);
 
-  Serial.print("Connecting to Adafruit IO");
-  io.connect();
-
-  while(io.status() < AIO_CONNECTED) {
-    Serial.print(".");
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(WIFI_SSID , WIFI_PASS);
+  
+  Serial.print("connecting to wifi  network");
+  while (WiFi.status() != WL_CONNECTED) {
     delay(500);
+    Serial.print(".");
   }
-
-  Serial.println();
-  Serial.println(io.statusText());
-
+  Serial.println("connected");
+  
 }
 
 void loop() {
-
-  io.run();
 
   if(HC.available()){
 
@@ -56,10 +51,27 @@ void loop() {
     message.remove(0, humidity.length() + 1);
     String light = message.substring(0, message.indexOf(";"));
     
-    temperatureIO->save(temperature.toFloat());
-    pressureIO->save(pressure.toFloat());
-    lightIO->save(light.toFloat());
-    humidityIO->save(humidity.toFloat());
+    sendData("tr.temperature", temperature);
+    delay(100);
+    sendData("tr.pressure", pressure);
+    delay(100);
+    sendData("tr.humidity", humidity);
+    delay(100);
+    sendData("tr.light", light);
 
   }
+}
+
+bool sendData(String feed, String data){
+  std::unique_ptr<BearSSL::WiFiClientSecure>client(new BearSSL::WiFiClientSecure);
+  client->setInsecure();
+  HTTPClient http;
+
+  http.begin(*client, "https://io.adafruit.com/api/v2/janvinas/feeds/" + feed + "/data");
+  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+  http.addHeader("X-AIO-Key", IO_KEY);
+
+  int httpResponseCode = http.POST("value=" + data);
+  Serial.println("responseCode: " + httpResponseCode);
+  Serial.println("response: " + http.getString());
 }
