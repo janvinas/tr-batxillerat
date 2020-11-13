@@ -3,47 +3,48 @@
 #include <WiFiClientSecureBearSSL.h>
 #include <SoftwareSerial.h>
 
-#define IO_KEY "194ab85b6c4147d1a8e19b5633df5796"
-#define WIFI_SSID "vodafoneC170"
-#define WIFI_PASS "vinascorella1"
+#define IO_KEY "194ab85b6c4147d1a8e19b5633df5796" //clau per l'API d'Adafruit IO
+#define WIFI_SSID "vodafoneC170"    //SSID Wi-Fi
+#define WIFI_PASS "vinascorella1"   //contrasenya Wi-Fi
 
-SoftwareSerial HC(13,12);
+SoftwareSerial HC(13,12);   //crea un port sèrie virtual als pins RX=GPIO13; TX=GPIO12
 
-bool sendData(String feed, String data);
+bool sendData(String feed, String data);    //prototip de la funció que envia una dada per http
 
 void setup() {
   
-  WiFi.setSleepMode(WIFI_NONE_SLEEP);
+  WiFi.setSleepMode(WIFI_NONE_SLEEP);   //incrementa el consum d'energia, però ajuda amb la fiabilitat de la conexió
 
-  Serial.begin(115200);
-  HC.begin(2400);
+  Serial.begin(115200);   //inicialitza port sèrie de hardware
+  HC.begin(2400);         //inicialitza port sèrie virtual
 
-  pinMode(0, OUTPUT);
+  pinMode(0, OUTPUT);     //Led d'informació connectat al pin GPIO0
 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID , WIFI_PASS);
+  WiFi.mode(WIFI_STA);    //
+  WiFi.begin(WIFI_SSID , WIFI_PASS);  //connecta a la xarxa Wi-Fi amb la informació proporcionada anteriorment.
   
-  Serial.print("connecting to wifi  network");
+  Serial.print("connecting to wifi  network");  //espera mentre s'estableix la connexió
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
-  Serial.println("connected");
+  Serial.println("connected");    //connexió establerta, podem continua
   
 }
 
 void loop() {
 
+  //la següent condició s'activara quan s'hagi rebut dades del receptor de ràdio
   if(HC.available()){
 
-    String message = HC.readString();
+    String message = HC.readString();   //emmagatzema la informació rebuda en una variable
     Serial.print("data received: ");
-    Serial.println(message);
-    digitalWrite(0, 1);
+    Serial.println(message);            //imprimeix la informació
+    digitalWrite(0, 1);    //curt avís lluminós sobre la rebuda de dades.
     delay(100);
     digitalWrite(0, 0);
 
-    String temperature = message.substring(0, message.indexOf(","));
+    String temperature = message.substring(0, message.indexOf(","));    //separa la informació
     message.remove(0, temperature.length() + 1);
     String pressure = message.substring(0, message.indexOf(","));
     message.remove(0, pressure.length() + 1);
@@ -51,7 +52,7 @@ void loop() {
     message.remove(0, humidity.length() + 1);
     String light = message.substring(0, message.indexOf(";"));
     
-    sendData("tr.temperature", temperature);
+    sendData("tr.temperature", temperature);    //envia cada dada amb una petició HTTP independent
     delay(100);
     sendData("tr.pressure", pressure);
     delay(100);
@@ -63,15 +64,15 @@ void loop() {
 }
 
 bool sendData(String feed, String data){
-  std::unique_ptr<BearSSL::WiFiClientSecure>client(new BearSSL::WiFiClientSecure);
-  client->setInsecure();
+  std::unique_ptr<BearSSL::WiFiClientSecure>client(new BearSSL::WiFiClientSecure);    //necessari per fer una petició HTTPS
+  client->setInsecure();    //la seguretat no és important aquí, així que no xifrarem la connexió
   HTTPClient http;
 
-  http.begin(*client, "https://io.adafruit.com/api/v2/janvinas/feeds/" + feed + "/data");
-  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-  http.addHeader("X-AIO-Key", IO_KEY);
+  http.begin(*client, "https://io.adafruit.com/api/v2/janvinas/feeds/" + feed + "/data");  //URL on s'haurà de fer la petició. Depèn del "feed" que volguem utilitzar
+  http.addHeader("Content-Type", "application/x-www-form-urlencoded");  //informació sobre el contingut del cos de la transmissió.
+  http.addHeader("X-AIO-Key", IO_KEY);    //autenticació, necessària per publicar les dades
 
-  int httpResponseCode = http.POST("value=" + data);
-  Serial.println("responseCode: " + httpResponseCode);
-  Serial.println("response: " + http.getString());
+  int httpResponseCode = http.POST("value=" + data);    //realitza la petició i desa el codi de resposta
+  Serial.println("responseCode: " + httpResponseCode);  //imprimeix el codi de resposta
+  Serial.println("response: " + http.getString());      //i la resposta
 }
