@@ -12,15 +12,14 @@ SoftwareSerial HC(13,12);   //crea un port sèrie virtual als pins RX=GPIO13; TX
 bool sendData(String feed, String data);    //prototip de la funció que envia una dada per http
 
 void setup() {
-  
-  WiFi.setSleepMode(WIFI_NONE_SLEEP);   //incrementa el consum d'energia, però ajuda amb la fiabilitat de la conexió
 
   Serial.begin(115200);   //inicialitza port sèrie de hardware
   HC.begin(2400);         //inicialitza port sèrie virtual
 
   pinMode(0, OUTPUT);     //Led d'informació connectat al pin GPIO0
 
-  WiFi.mode(WIFI_STA);    //
+  WiFi.setSleepMode(WIFI_NONE_SLEEP);   //incrementa el consum d'energia, però ajuda amb la fiabilitat de la conexió
+  WiFi.mode(WIFI_STA);    //defineix el mode de funcionament del Wi-Fi
   WiFi.begin(WIFI_SSID , WIFI_PASS);  //connecta a la xarxa Wi-Fi amb la informació proporcionada anteriorment.
   
   Serial.print("connecting to wifi  network");  //espera mentre s'estableix la connexió
@@ -28,7 +27,7 @@ void setup() {
     delay(500);
     Serial.print(".");
   }
-  Serial.println("connected");    //connexió establerta, podem continua
+  Serial.println("connected");    //connexió establerta, podem continuar
   
 }
 
