@@ -74,4 +74,10 @@ bool sendData(String feed, String data){
   int httpResponseCode = http.POST("value=" + data);    //realitza la petició i desa el codi de resposta
   Serial.println("responseCode: " + httpResponseCode);  //imprimeix el codi de resposta
   Serial.println("response: " + http.getString());      //i la resposta
+  
+  if(httpResponseCode > 0){
+    return true;
+  }else{
+    return false;
+  }
 }
