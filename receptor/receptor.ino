@@ -2,18 +2,23 @@
 #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecureBearSSL.h>
 #include <SoftwareSerial.h>
+#include <Wire.h>
+#include <SSD1306Wire.h>
 
 #define IO_KEY "194ab85b6c4147d1a8e19b5633df5796" //clau per l'API d'Adafruit IO
 #define WIFI_SSID "vodafoneC170"    //SSID Wi-Fi
 #define WIFI_PASS "vinascorella1"   //contrasenya Wi-Fi
 
-#define RX_PIN 4
-#define TX_PIN 5
-#define LED_PIN 16
+#define RX_PIN 14
+#define TX_PIN 12
+#define LED_PIN 2
 
 SoftwareSerial HC(RX_PIN, TX_PIN);   //crea un port sèrie virtual
 
+SSD1306Wire display(0x3c, 5, 4);
+
 bool sendData(String feed, String data);    //prototip de la funció que envia una dada per http
+void updateDisplay(String val1, String val2, String val3, String message, byte progessBar);
 
 void setup() {
 
@@ -21,6 +26,12 @@ void setup() {
   HC.begin(2400);         //inicialitza port sèrie virtual
 
   pinMode(LED_PIN, OUTPUT);     //Led d'informació connectat al pin GPIO0
+
+  display.init();
+  display.setContrast(255);
+  display.flipScreenVertically();
+  display.clear();
+  updateDisplay("--", "--", "--", "--", 0);
 
   WiFi.setSleepMode(WIFI_NONE_SLEEP);   //incrementa el consum d'energia, però ajuda amb la fiabilitat de la conexió
   WiFi.mode(WIFI_STA);    //defineix el mode de funcionament del Wi-Fi
@@ -54,14 +65,24 @@ void loop() {
     String humidity = message.substring(0, message.indexOf(","));
     message.remove(0, humidity.length() + 1);
     String light = message.substring(0, message.indexOf(";"));
+
+    updateDisplay(temperature, pressure, humidity, "s'ha rebut informació", 0);
+    delay(1000);
     
+    updateDisplay(temperature, pressure, humidity, "enviant informació", 0);
     sendData("tr.temperature", temperature);    //envia cada dada amb una petició HTTP independent
+    updateDisplay(temperature, pressure, humidity, "enviant informació", 1);
     delay(100);
     sendData("tr.pressure", pressure);
+    updateDisplay(temperature, pressure, humidity, "enviant informació", 2);
     delay(100);
     sendData("tr.humidity", humidity);
+    updateDisplay(temperature, pressure, humidity, "enviant informació", 3);
     delay(100);
     sendData("tr.light", light);
+    updateDisplay(temperature, pressure, humidity, "enviant informació", 4);
+    delay(500);
+    updateDisplay(temperature, pressure, humidity, "esperant informació", 0);
 
   }
 }
@@ -84,4 +105,15 @@ bool sendData(String feed, String data){
   }else{
     return false;
   }
+}
+
+void updateDisplay(String val1, String val2, String val3, String message, byte progessBar){
+  display.clear();
+  display.setFont(ArialMT_Plain_24);
+  display.drawString(0, 20, val1 + "°C");
+  display.setFont(ArialMT_Plain_10);
+  display.drawString(0, 45, val2 + "Pa");
+  display.drawString(80, 45, val3 + "%");
+  display.drawString(0, 0, message);
+  display.display(); //actualitza la pantalla
 }
