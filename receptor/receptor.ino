@@ -7,7 +7,11 @@
 #define WIFI_SSID "vodafoneC170"    //SSID Wi-Fi
 #define WIFI_PASS "vinascorella1"   //contrasenya Wi-Fi
 
-SoftwareSerial HC(13,12);   //crea un port sèrie virtual als pins RX=GPIO13; TX=GPIO12
+#define RX_PIN 4
+#define TX_PIN 5
+#define LED_PIN 16
+
+SoftwareSerial HC(RX_PIN, TX_PIN);   //crea un port sèrie virtual
 
 bool sendData(String feed, String data);    //prototip de la funció que envia una dada per http
 
@@ -16,7 +20,7 @@ void setup() {
   Serial.begin(115200);   //inicialitza port sèrie de hardware
   HC.begin(2400);         //inicialitza port sèrie virtual
 
-  pinMode(0, OUTPUT);     //Led d'informació connectat al pin GPIO0
+  pinMode(LED_PIN, OUTPUT);     //Led d'informació connectat al pin GPIO0
 
   WiFi.setSleepMode(WIFI_NONE_SLEEP);   //incrementa el consum d'energia, però ajuda amb la fiabilitat de la conexió
   WiFi.mode(WIFI_STA);    //defineix el mode de funcionament del Wi-Fi
@@ -39,9 +43,9 @@ void loop() {
     String message = HC.readString();   //emmagatzema la informació rebuda en una variable
     Serial.print("data received: ");
     Serial.println(message);            //imprimeix la informació
-    digitalWrite(0, 1);    //curt avís lluminós sobre la rebuda de dades.
+    digitalWrite(LED_PIN, 1);    //curt avís lluminós sobre la rebuda de dades.
     delay(100);
-    digitalWrite(0, 0);
+    digitalWrite(LED_PIN, 0);
 
     String temperature = message.substring(0, message.indexOf(","));    //separa la informació
     message.remove(0, temperature.length() + 1);
