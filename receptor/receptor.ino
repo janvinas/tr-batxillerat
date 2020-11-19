@@ -31,7 +31,7 @@ void setup() {
   display.setContrast(255);
   display.flipScreenVertically();
   display.clear();
-  updateDisplay("--", "--", "--", "--", 0);
+  updateDisplay("--", "--", "--", "esperant informació", 0);
 
   WiFi.setSleepMode(WIFI_NONE_SLEEP);   //incrementa el consum d'energia, però ajuda amb la fiabilitat de la conexió
   WiFi.mode(WIFI_STA);    //defineix el mode de funcionament del Wi-Fi
@@ -107,13 +107,16 @@ bool sendData(String feed, String data){
   }
 }
 
-void updateDisplay(String val1, String val2, String val3, String message, byte progessBar){
+void updateDisplay(String val1, String val2, String val3, String message, byte progressBar){
   display.clear();
   display.setFont(ArialMT_Plain_24);
-  display.drawString(0, 20, val1 + "°C");
+  display.drawString(3, 25, val1 + "°C");
   display.setFont(ArialMT_Plain_10);
-  display.drawString(0, 45, val2 + "Pa");
-  display.drawString(80, 45, val3 + "%");
-  display.drawString(0, 0, message);
+  display.drawString(3, 50, val2 + "Pa");
+  display.drawString(80, 50, val3 + "%");
+  display.drawString(2, 2, message);
+  display.drawRect(0, 0, 128, 64);
+  if(progressBar != 0) display.drawRect(2, 16, 64, 5);
+  display.drawHorizontalLine(4, 18, 15 * progressBar);
   display.display(); //actualitza la pantalla
 }
