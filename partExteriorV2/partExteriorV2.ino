@@ -76,8 +76,10 @@ void loop() {
 
   HC.print(dataString);
 
-  LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF); //espera 24 segons amb el microcontrolador
-  LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF); //apagat, per estalviar energia.
-  LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
+  for(byte i = 0; i < 37; i++){
+    LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);   //espera 298s (aprox. 5 minuts, 8 * 37) per estalviar energia
+  }
+
+  
   
 }
