@@ -32,17 +32,6 @@ void setup() {
   display.flipScreenVertically();
   display.clear();
   updateDisplay("--", "--", "--", "esperant informació", 0);
-
-  WiFi.setSleepMode(WIFI_NONE_SLEEP);   //incrementa el consum d'energia, però ajuda amb la fiabilitat de la conexió
-  WiFi.mode(WIFI_STA);    //defineix el mode de funcionament del Wi-Fi
-  WiFi.begin(WIFI_SSID , WIFI_PASS);  //connecta a la xarxa Wi-Fi amb la informació proporcionada anteriorment.
-  
-  Serial.print("connecting to wifi  network");  //espera mentre s'estableix la connexió
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("connected");    //connexió establerta, podem continuar
   
 }
 
@@ -68,6 +57,15 @@ void loop() {
 
     updateDisplay(temperature, pressure, humidity, "s'ha rebut informació", 0);
     delay(1000);
+
+    WiFi.mode(WIFI_STA);    //defineix el mode de funcionament del Wi-Fi
+    WiFi.begin(WIFI_SSID , WIFI_PASS);  //connecta a la xarxa Wi-Fi amb la informació proporcionada anteriorment.
+    Serial.print("connecting to wifi  network");  //espera mentre s'estableix la connexió
+    while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      Serial.print(".");
+    }
+    Serial.println("connected");    //connexió establerta, podem continuar
     
     updateDisplay(temperature, pressure, humidity, "enviant informació", 0);
     sendData("tr.temperature", temperature);    //envia cada dada amb una petició HTTP independent
@@ -84,10 +82,13 @@ void loop() {
     delay(500);
     updateDisplay(temperature, pressure, humidity, "esperant informació", 0);
 
+    WiFi.disconnect(true);
+
   }
 }
 
 bool sendData(String feed, String data){
+  
   std::unique_ptr<BearSSL::WiFiClientSecure>client(new BearSSL::WiFiClientSecure);    //necessari per fer una petició HTTPS
   client->setInsecure();    //la seguretat no és important aquí, així que no xifrarem la connexió
   HTTPClient http;
