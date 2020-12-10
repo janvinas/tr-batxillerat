@@ -19,6 +19,9 @@ SSD1306Wire display(0x3c, 5, 4);
 
 bool sendData(String feed, String data);    //prototip de la funció que envia una dada per http
 void updateDisplay(String val1, String val2, String val3, String message, byte progessBar);
+void updateTime(int t);
+
+long lastReading = 0;
 
 void setup() {
 
@@ -82,9 +85,12 @@ void loop() {
     delay(500);
     updateDisplay(temperature, pressure, humidity, "esperant informació", 0);
 
+    lastReading = millis();
     WiFi.disconnect(true);
 
   }
+
+  updateTime( (millis() - lastReading) / 1000 );
 }
 
 bool sendData(String feed, String data){
@@ -111,6 +117,7 @@ bool sendData(String feed, String data){
 void updateDisplay(String val1, String val2, String val3, String message, byte progressBar){
   display.clear();
   display.setFont(ArialMT_Plain_24);
+  display.setTextAlignment(TEXT_ALIGN_LEFT);
   display.drawString(3, 25, val1 + "°C");
   display.setFont(ArialMT_Plain_10);
   display.drawString(3, 50, val2 + "Pa");
@@ -120,4 +127,22 @@ void updateDisplay(String val1, String val2, String val3, String message, byte p
   if(progressBar != 0) display.drawRect(2, 16, 64, 5);
   display.drawHorizontalLine(4, 18, 15 * progressBar);
   display.display(); //actualitza la pantalla
+}
+
+void updateTime(int t){
+  int seconds = t % 60;
+  int minutes = floor(t / 60);
+  String result;
+  if(seconds < 10){
+    result = String(minutes) + ":" + "0" + String(seconds);
+  }else{
+    result = String(minutes) + ":" + String(seconds);
+  }
+  display.setTextAlignment(TEXT_ALIGN_RIGHT);
+  display.setFont(ArialMT_Plain_10);
+  display.setColor(BLACK);
+  display.fillRect(display.getWidth() - 2 - display.getStringWidth(result), 2,  display.getStringWidth(result), 10);
+  display.setColor(WHITE);
+  display.drawString(display.getWidth() - 2, 2, result);
+  display.display();
 }
