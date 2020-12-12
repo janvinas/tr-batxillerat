@@ -5,9 +5,9 @@
 #include <Wire.h>
 #include <SSD1306Wire.h>
 
-#define IO_KEY "194ab85b6c4147d1a8e19b5633df5796" //clau per l'API d'Adafruit IO
-#define WIFI_SSID "vodafoneC170"    //SSID Wi-Fi
-#define WIFI_PASS "vinascorella1"   //contrasenya Wi-Fi
+#define IO_KEY "***" //clau per l'API d'Adafruit IO
+#define WIFI_SSID "***"    //SSID Wi-Fi
+#define WIFI_PASS "***"   //contrasenya Wi-Fi
 
 #define RX_PIN 14
 #define TX_PIN 12
