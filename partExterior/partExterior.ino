@@ -3,8 +3,6 @@
  * 
  *   Treball de Recerca de Batxillerat 2020
  * 
- *       CC BY 4.0 - Jan Viñas Corella
- * 
  */ 
 
 /*
