@@ -4,6 +4,9 @@
 #include <SoftwareSerial.h>
 #include <Wire.h>
 #include <SSD1306Wire.h>
+#include <IRremoteESP8266.h>
+#include <IRrecv.h>
+#include <IRutils.h>
 
 #define IO_KEY "***" //clau per l'API d'Adafruit IO
 #define WIFI_SSID "***"    //SSID Wi-Fi
@@ -12,21 +15,33 @@
 #define RX_PIN 14
 #define TX_PIN 12
 #define LED_PIN 2
+#define IR_PIN 0
 
 SoftwareSerial HC(RX_PIN, TX_PIN);   //crea un port sèrie virtual
 
 SSD1306Wire display(0x3c, 5, 4);
 
+IRrecv receiver(IR_PIN);
+decode_results results;
+
 bool sendData(String feed, String data);    //prototip de la funció que envia una dada per http
 void updateDisplay(String val1, String val2, String val3, String message, byte progessBar);
 void updateTime(int t);
+void handleIR(long long code);
 
 long lastReading = 0;
+String temperature = "--";
+String pressure = "--";
+String humidity = "--";
+String light = "--";
+float temperatureHistory[64] = {};
+int historyLocation = 0;
 
 void setup() {
 
   Serial.begin(115200);   //inicialitza port sèrie de hardware
   HC.begin(2400);         //inicialitza port sèrie virtual
+  receiver.enableIRIn();
 
   pinMode(LED_PIN, OUTPUT);     //Led d'informació connectat al pin GPIO0
 
@@ -50,13 +65,13 @@ void loop() {
     delay(100);
     digitalWrite(LED_PIN, 0);
 
-    String temperature = message.substring(0, message.indexOf(","));    //separa la informació
+    temperature = message.substring(0, message.indexOf(","));    //separa la informació
     message.remove(0, temperature.length() + 1);
-    String pressure = message.substring(0, message.indexOf(","));
+    pressure = message.substring(0, message.indexOf(","));
     message.remove(0, pressure.length() + 1);
-    String humidity = message.substring(0, message.indexOf(","));
+    humidity = message.substring(0, message.indexOf(","));
     message.remove(0, humidity.length() + 1);
-    String light = message.substring(0, message.indexOf(";"));
+    light = message.substring(0, message.indexOf(";"));
 
     updateDisplay(temperature, pressure, humidity, "s'ha rebut informació", 0);
     delay(1000);
@@ -85,9 +100,20 @@ void loop() {
     delay(500);
     updateDisplay(temperature, pressure, humidity, "esperant informació", 0);
 
+    temperatureHistory[historyLocation] = temperature.toFloat();
+    historyLocation++;
+    if(historyLocation > 64) historyLocation = 0;
+
     lastReading = millis();
     WiFi.disconnect(true);
 
+  }
+
+  if (receiver.decode(&results)) {
+    serialPrintUint64(results.value, HEX);
+    Serial.println("");
+    handleIR(results.value);
+    receiver.resume();  // Receive the next value
   }
 
   updateTime( (millis() - lastReading) / 1000 );
@@ -114,35 +140,10 @@ bool sendData(String feed, String data){
   }
 }
 
-void updateDisplay(String val1, String val2, String val3, String message, byte progressBar){
-  display.clear();
-  display.setFont(ArialMT_Plain_24);
-  display.setTextAlignment(TEXT_ALIGN_LEFT);
-  display.drawString(3, 25, val1 + "°C");
-  display.setFont(ArialMT_Plain_10);
-  display.drawString(3, 50, val2 + "Pa");
-  display.drawString(80, 50, val3 + "%");
-  display.drawString(2, 2, message);
-  display.drawRect(0, 0, 128, 64);
-  if(progressBar != 0) display.drawRect(2, 16, 64, 5);
-  display.drawHorizontalLine(4, 18, 15 * progressBar);
-  display.display(); //actualitza la pantalla
-}
-
-void updateTime(int t){
-  int seconds = t % 60;
-  int minutes = floor(t / 60);
-  String result;
-  if(seconds < 10){
-    result = String(minutes) + ":" + "0" + String(seconds);
-  }else{
-    result = String(minutes) + ":" + String(seconds);
+void handleIR(long long code){
+  if(code == 0xFF30CF){
+    updateDisplay(temperature, pressure, humidity, "esperant informació", 0);
+  }else if(code == 0xFF18E7){
+    updateDisplay2();
   }
-  display.setTextAlignment(TEXT_ALIGN_RIGHT);
-  display.setFont(ArialMT_Plain_10);
-  display.setColor(BLACK);
-  display.fillRect(display.getWidth() - 2 - display.getStringWidth(result), 2,  display.getStringWidth(result), 10);
-  display.setColor(WHITE);
-  display.drawString(display.getWidth() - 2, 2, result);
-  display.display();
 }
