@@ -13,15 +13,17 @@ void updateDisplay(String val1, String val2, String val3, String message, byte p
   display.display(); //actualitza la pantalla
 }
 
-void updateDisplay2(){
+void updateDisplay2(bool loading){
   display.clear();
   display.setFont(ArialMT_Plain_10);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
   display.drawString(0, 0, "Temperatura");
   display.drawHorizontalLine(0, 11, 160);
-  int readPos = historyLocation;
+  File loc = SPIFFS.open("loc", "r");
+  int readPos = loc.readString().toInt();
   for(int i = 0; i < 64; i++){
-    display.drawLine(i * 2, 60, i * 2, 60 - temperatureHistory[readPos]); 
+    File temp = SPIFFS.open("t-" + readPos, "r");
+    display.drawLine(i * 2, 60, i * 2, 60 - temp.readString().toFloat()); 
     readPos++;
     if(readPos > 64 ) readPos = 0;
   }

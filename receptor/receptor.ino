@@ -7,10 +7,12 @@
 #include <IRremoteESP8266.h>
 #include <IRrecv.h>
 #include <IRutils.h>
+#include <FS.h>
+#include "Commands.h"
 
-#define IO_KEY "***" //clau per l'API d'Adafruit IO
-#define WIFI_SSID "***"    //SSID Wi-Fi
-#define WIFI_PASS "***"   //contrasenya Wi-Fi
+#define IO_KEY "194ab85b6c4147d1a8e19b5633df5796" //clau per l'API d'Adafruit IO
+#define WIFI_SSID "vodafoneC170"    //SSID Wi-Fi
+#define WIFI_PASS "vinascorella1"   //contrasenya Wi-Fi
 
 #define RX_PIN 14
 #define TX_PIN 12
@@ -26,6 +28,7 @@ decode_results results;
 
 bool sendData(String feed, String data);    //prototip de la funció que envia una dada per http
 void updateDisplay(String val1, String val2, String val3, String message, byte progessBar);
+void updateDisplay2(bool loading = false);
 void updateTime(int t);
 void handleIR(long long code);
 
@@ -34,14 +37,13 @@ String temperature = "--";
 String pressure = "--";
 String humidity = "--";
 String light = "--";
-float temperatureHistory[64] = {};
-int historyLocation = 0;
 
 void setup() {
 
   Serial.begin(115200);   //inicialitza port sèrie de hardware
   HC.begin(2400);         //inicialitza port sèrie virtual
   receiver.enableIRIn();
+  SPIFFS.begin();
 
   pinMode(LED_PIN, OUTPUT);     //Led d'informació connectat al pin GPIO0
 
@@ -100,13 +102,38 @@ void loop() {
     delay(500);
     updateDisplay(temperature, pressure, humidity, "esperant informació", 0);
 
-    temperatureHistory[historyLocation] = temperature.toFloat();
-    historyLocation++;
-    if(historyLocation > 64) historyLocation = 0;
+    File historyLocation = SPIFFS.open("loc", "w");
+      if(!historyLocation){
+        Serial.println("couldn't open file: " + String(historyLocation.name()) );
+      }else{
+        int location = historyLocation.readString().toInt();
+
+        File temperatureFile = SPIFFS.open("/t-" + location, "w");
+          if(!temperatureFile){
+            Serial.println("couldn't open file: " + String(temperatureFile.name()) );
+          }else{
+            temperatureFile.flush();
+            temperatureFile.print(String(temperature));
+            Serial.println("wrote " + temperature + " at file " + String(temperatureFile.name()) );
+          }
+          temperatureFile.close();
+        
+        location++;
+        if(location > 64) location = 0;
+        historyLocation.flush();
+        historyLocation.print(String(location));
+        Serial.println("wrote " + String(location) + " at file " + String(historyLocation.name()) );
+      }
+      historyLocation.close();
+    
 
     lastReading = millis();
     WiFi.disconnect(true);
 
+  }
+
+  if(Serial.available()){
+    handleCommand(Serial.readString());
   }
 
   if (receiver.decode(&results)) {
